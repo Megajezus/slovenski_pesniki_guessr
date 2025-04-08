@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prijava v Klepet</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Dobrodošli v Preprostem Klepetu</h1>
+    
+    <div id="error-message" style="color: red; display: none;"></div>
+    
+    <div id="login-container">
+        <h2>Prijava ali Registracija</h2>
+        <p>Če račun ne obstaja, bo ustvarjen nov.</p>
+        
+        <div>
+            <label for="username">Uporabniško ime:</label>
+            <input type="text" id="username" required>
+        </div>
+        
+        <div>
+            <label for="password">Geslo:</label>
+            <input type="password" id="password" required>
+        </div>
+        
+        <div>
+            <button onclick="loginOrRegister()">Prijava / Registracija</button>
+        </div>
+    </div>
+    
+    <script>
+        function loginOrRegister() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMessage = document.getElementById('error-message');
+            
+            if (username === '' || password === '') {
+                errorMessage.textContent = 'Uporabniško ime in geslo sta obvezna!';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            errorMessage.style.display = 'none';
+            
+            $.ajax({
+                url: '/login',
+                type: 'POST',
+                data: {
+                    username: username,
+                    password: password
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        window.location.href = '/';
+                    } else {
+                        errorMessage.textContent = response.error;
+                        errorMessage.style.display = 'block';
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Podrobnosti napake:', xhr.responseText);
+                    errorMessage.textContent = 'Prišlo je do napake. Poskusite znova.';
+                    errorMessage.style.display = 'block';
+                }
+            });
+        }
+        
+        document.getElementById('username').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loginOrRegister();
+            }
+        });
+        
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loginOrRegister();
+            }
+        });
+    </script>
+</body>
+</html>
