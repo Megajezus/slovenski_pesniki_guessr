@@ -35,10 +35,26 @@ def dodaj_pesnika():
     podatki = podatki.get_json()
 
     return jsonify(podatki), 201
-'''
-@app.route("/slika_pesnika/<int:pesnik_id>/slika")
-def get_slika(pesnik_id):
-    url = 
-'''
+    
+@app.route("/check_poet", methods=["POST"])
+def check_poet():
+    data = request.get_json()
+    poet_id = data['poet_id']
+    user_input = data['user_input']
+    
+    poet = next((p for p in pesniki if p['id'] == poet_id), None)
+    
+    if not poet:
+        return jsonify({"correct": False})
+    
+    correct = (
+        user_input['ime'].lower() == poet['pesnik_ime'].lower() and
+        user_input['priimek'].lower() == poet['pesnik_priimek'].lower() and
+        user_input['rojen'] == poet['pesnik_rojen'] and
+        user_input['umrl'] == poet['pesnik_umrl']
+    )
+    
+    return jsonify({"correct": correct})
+
 if __name__ == ("__main__"):
     app.run(debug=True)
