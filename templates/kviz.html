@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Slovenski Pesniki</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .image-container {
+            width: 300px;
+            height: 300px;
+            border: 2px solid #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .form-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 300px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            grid-column: span 2;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="image-container" id="imageContainer">
+        <img id="pesnikImage" src="" alt="Pesnik">
+    </div>
+    
+    <div class="form-container">
+        <div class="input-group">
+            <label for="ime">Ime:</label>
+            <input type="text" id="ime">
+        </div>
+        <div class="input-group">
+            <label for="priimek">Priimek:</label>
+            <input type="text" id="priimek">
+        </div>
+        <div class="input-group">
+            <label for="rojen">Rojen:</label>
+            <input type="text" id="rojen">
+        </div>
+        <div class="input-group">
+            <label for="umrl">Umrl:</label>
+            <input type="text" id="umrl">
+        </div>
+        <button onclick="checkAnswer()">Preveri</button>
+    </div>
+    
+    <div id="result"></div>
+
+    <script>
+        $(document).ready(function() {
+            loadRandomPoet();
+        });
+
+        function loadRandomPoet() {
+            $.ajax({
+                url: '/pesniki',
+                method: 'GET',
+                success: function(data) {
+                    const randomIndex = Math.floor(Math.random() * data.length);
+                    const poet = data[randomIndex];
+                    $('#pesnikImage').attr('src', poet.pesnik_slika);
+                    $('#pesnikImage').data('poet-data', poet);
+                }
+            });
+        }
+
+        function checkAnswer() {
+            const poetData = $('#pesnikImage').data('poet-data');
+            const userInput = {
+                ime: $('#ime').val(),
+                priimek: $('#priimek').val(),
+                rojen: $('#rojen').val(),
+                umrl: $('#umrl').val()
+            };
+
+            $.ajax({
+                url: '/check_poet',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    poet_id: poetData.id,
+                    user_input: userInput
+                }),
+                success: function(response) {
+                    if (response.correct) {
+                        $('#result').text('Pravilno!').css('color', 'green');
+                    } else {
+                        $('#result').text('Napačno! Poskusi znova.').css('color', 'red');
+                    }
+                    setTimeout(loadRandomPoet, 2000);
+                    $('#ime, #priimek, #rojen, #umrl').val('');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
