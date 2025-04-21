@@ -1,9 +1,17 @@
-from flask import Flask, request, jsonify, render_template
-import requests
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from tinydb import TinyDB, Query
+from datetime import datetime
+from tinydb.operations import delete
+import os
+
 app = Flask(__name__)
+app.secret_key = "kila_dreka"
+
+db = TinyDB('spg.json')
+users = db.table('uporabniki')
+User = Query()
 
 pesniki = [
-    
     {"id": 1, "pesnik_ime": "France", "pesnik_priimek": "Prešeren", "pesnik_slika": "https://www.ekoper.si/wp-content/uploads/2017/02/france.jpg", "pesnik_rojen": "1800", "pesnik_umrl": "1849"},
     {"id": 2, "pesnik_ime": "Matija", "pesnik_priimek": "Čop", "pesnik_slika": "https://javnost.si/wp-content/uploads/2022/07/Matija-Cop-1200x630.jpg", "pesnik_rojen": "1797", "pesnik_umrl": "1835"},
     {"id": 3, "pesnik_ime": "Anton", "pesnik_priimek": "Aškerc", "pesnik_slika": "https://n1info.si/wp-content/uploads/2022/06/09/1654776210-askerc3-1024x768.jpg", "pesnik_rojen": "1856", "pesnik_umrl": "1912"},
@@ -19,11 +27,52 @@ pesniki = [
     {"id": 13, "pesnik_ime": "Lovro", "pesnik_priimek": "Kuhar (Prežihov Voranc)", "pesnik_slika": "https://www.obrazislovenskihpokrajin.si/slir/w800-h1057-c800x1057/wp-content/uploads/2019/09/Pre%C5%BEihov-Voranc_Portret_2_osp-1024x728.jpg", "pesnik_rojen": "1893", "pesnik_umrl": "1950"}
 ]
 
+@app.route('/')
+def index():
+    if 'username' in session:
+        return redirect(url_for('kviz'))  
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        try:
+            username = request.form['username']
+            password = request.form['password']
+            user = users.get(User.username == username)
+            
+            if user:
+                if user['password'] == password:
+                    session['username'] = username
+                    return jsonify({'success': True, 'redirect': url_for('kviz')}) 
+                else:
+                    return jsonify({'success': False, 'error': 'Napačno geslo'})
+            else:
+                users.insert({'username': username, 'password': password})
+                session['username'] = username
+                return jsonify({'success': True, 'redirect': url_for('kviz')})  
+        except Exception as e:
+            print(f"Napaka pri prijavi: {str(e)}")
+            return jsonify({'success': False, 'error': 'Prišlo je do napake'})
+    
+    return render_template('login.html')
+
+@app.route('/kviz')
+def kviz():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('kviz.html')
+    
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
+
 @app.route('/pesniki', methods=['GET'])
 def get_pesniki():
     return jsonify(pesniki)
 
-@app.route("/pesniki/<int:pesnik_id>", methods = ["GET"])
+@app.route("/pesniki/<int:pesnik_id>", methods=["GET"])
 def get_pesnik(pesnik_id):
     pesnik = next((pesnik for pesnik in pesniki if pesnik["id"] == pesnik_id), None)
     if pesnik:
@@ -32,29 +81,31 @@ def get_pesnik(pesnik_id):
 
 @app.route("/dodaj_pesnika", methods=["POST"])
 def dodaj_pesnika():
-    podatki = podatki.get_json()
-
+    podatki = request.get_json()
     return jsonify(podatki), 201
     
-@app.route("/check_poet", methods=["POST"])
+@app.route("/preveri_pesnika", methods=["POST"])
 def check_poet():
     data = request.get_json()
-    poet_id = data['poet_id']
-    user_input = data['user_input']
+    pesnik_id = data['pesnik_id']
+    vnos = data['vnos']
     
-    poet = next((p for p in pesniki if p['id'] == poet_id), None)
+    poet = next((p for p in pesniki if p['id'] == pesnik_id), None)
     
     if not poet:
         return jsonify({"correct": False})
     
     correct = (
-        user_input['ime'].lower() == poet['pesnik_ime'].lower() and
-        user_input['priimek'].lower() == poet['pesnik_priimek'].lower() and
-        user_input['rojen'] == poet['pesnik_rojen'] and
-        user_input['umrl'] == poet['pesnik_umrl']
+        vnos['ime'].lower() == poet['pesnik_ime'].lower() and
+        vnos['priimek'].lower() == poet['pesnik_priimek'].lower() and
+        vnos['rojen'] == poet['pesnik_rojen'] and
+        vnos['umrl'] == poet['pesnik_umrl']
     )
     
     return jsonify({"correct": correct})
 
-if __name__ == ("__main__"):
+if __name__ == "__main__":
+    if not os.path.exists('templates'):
+        os.makedirs('templates')
+    
     app.run(debug=True)
