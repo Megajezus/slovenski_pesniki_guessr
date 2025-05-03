@@ -116,7 +116,7 @@
 
         function checkAnswer() {
             const poetData = $('#pesnikImage').data('poet-data');
-            const userInput = {
+            const vnos = {
                 ime: $('#ime').val(),
                 priimek: $('#priimek').val(),
                 rojen: $('#rojen').val(),
@@ -129,7 +129,7 @@
                 contentType: 'application/json',
                 data: JSON.stringify({
                     poet_id: poetData.id,
-                    user_input: userInput
+                    user_input: vnos
                 }),
                 success: function(response) {
                     if (response.correct) {
