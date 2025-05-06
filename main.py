@@ -83,7 +83,8 @@ def get_pesnik(pesnik_id):
 def dodaj_pesnika():
     podatki = request.get_json()
     return jsonify(podatki), 201
-    
+runda = 1
+
 @app.route("/preveri_pesnika", methods=["POST"])
 def check_poet():
     data = request.get_json()
@@ -101,8 +102,11 @@ def check_poet():
         vnos['rojen'] == poet['pesnik_rojen'] and
         vnos['umrl'] == poet['pesnik_umrl']
     )
-    
+   if correct:
+        runda += 1
+        return render_template("kviz.html", runda)
     return jsonify({"correct": correct})
+
 
 if __name__ == "__main__":
     if not os.path.exists('templates'):
