@@ -12,8 +12,8 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-color: #4b007e;
-            background-image: linear-gradient(to bottom right, rgb(98, 0, 128), rgb(158, 1, 158));
+            background-image: url(zdravljica.jpg);
+            object-fit: cover;
         }
         .image-container {
             width: 500px;
@@ -28,7 +28,7 @@
         .image-container img {
             max-width: 100%;
             max-height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
         .form-container {
             display: grid;
@@ -63,21 +63,45 @@
         button:hover {
             background-color: #45a049;
         }
-        #result {
+         #result {
             margin-top: 20px;
             font-weight: bold;
             font-size: 18px;
         }
-        header {
-            text-align: center;
+        #scoreboard {
+            margin-top: 20px;
+        }
+        #scoreboard h2 {
+            border-bottom: 1px solid white;
+            padding-bottom: 10px;
+        }
+        #scoreboard div {
+            margin: 5px 0;
+        }
+        #round-counter {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 15px;
+            background-color: #ff3333;
             color: white;
-            font-size: large;
-            font-weight: heavy;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #cc0000;
         }
     </style>
 </head>
 <body>
-    <header><h1>runda {{ runda }}</h1></header>
+    <button class="logout-btn" onclick="logout()">Odjava</button>
     <div class="image-container" id="imageContainer">
         <img id="pesnikImage" src="" alt="Pesnik">
     </div>
@@ -104,12 +128,16 @@
     
     <div id="result"></div>
 
+    <div class="left-panel">
+        <h2>Lestvica</h2>
+        <div id="scoreboard"></div>
+        <div id="round-counter">Krog: 1</div>
+    </div>
+
     <script>
         $(document).ready(function() {
             loadRandomPoet();
         });
-
-        function loadRandomPoet() {
             $.ajax({
                 url: '/pesniki',
                 method: 'GET',
@@ -120,7 +148,7 @@
                     $('#pesnikImage').data('poet-data', poet);
                 }
             });
-        }
+        
 
         function checkAnswer() {
             const poetData = $('#pesnikImage').data('poet-data');
@@ -132,23 +160,28 @@
             };
 
             $.ajax({
-                url: '/check_poet',
+                url: '/preveri_pesnika',
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    poet_id: poetData.id,
-                    user_input: vnos
+                    pesnik_id: poetData.id,
+                    vnos: vnos
                 }),
                 success: function(response) {
                     if (response.correct) {
                         $('#result').text('Pravilno!').css('color', 'green');
-                    } else {
+                    } 
+                    else {
                         $('#result').text('Napačno! Poskusi znova.').css('color', 'red');
                     }
-                    setTimeout(loadRandomPoet, 2000);
+                    setTimeout(loadRandomPoet, 200);
                     $('#ime, #priimek, #rojen, #umrl').val('');
                 }
             });
+        }
+
+        function logout() {
+            window.location.href = '/logout';
         }
     </script>
 </body>
