@@ -72,7 +72,12 @@
             margin-top: 20px;
             font-size: 18px;
         }
-
+        #score {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+        }
         .logout-btn {
             position: absolute;
             top: 20px;
@@ -117,12 +122,13 @@
     </div>
     
     <div id="result"></div>
-
+    <div id="score">Točke: 0</div>
     <div class="left-panel">
         <div id="round-counter">Krog: 1</div>
     </div>
 
     <script>
+        let score = 0;
         $(document).ready(function() {
             loadRandomPoet();
         });
@@ -158,6 +164,8 @@
                 success: function(response) {
                     if (response.correct) {
                         $('#result').text('Pravilno!').css('color', 'green');
+                        score += 25;
+                        $('#score').text('Točke: ' + score);
                     } 
                     else {
                         $('#result').text('Napačno! Poskusi znova.').css('color', 'red');
