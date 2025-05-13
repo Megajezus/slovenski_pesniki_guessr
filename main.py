@@ -84,6 +84,7 @@ def dodaj_pesnika():
     podatki = request.get_json()
     return jsonify(podatki), 201
 runda = 1
+poizkus = 1
 
 @app.route("/preveri_pesnika", methods=["POST"])
 def check_poet():
@@ -94,7 +95,9 @@ def check_poet():
     poet = next((p for p in pesniki if p['id'] == pesnik_id), None)
     
     if not poet:
-        return jsonify({"correct": False})
+        poizkus += 1
+        return jsonify({"correct": False}, "kviz.html", poizkus)
+        
     
     correct = (
         vnos['ime'].lower() == poet['pesnik_ime'].lower() and
@@ -104,7 +107,8 @@ def check_poet():
     )
    if correct:
         runda += 1
-        return render_template("kviz.html", runda)
+        poizkus = 0
+        return render_template("kviz.html", runda, "kviz.html", poizkus)
     return jsonify({"correct": correct})
 
 
