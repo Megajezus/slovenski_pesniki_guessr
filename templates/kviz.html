@@ -12,7 +12,7 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-image: url(zdravljica.jpg);
+            background-image: url(https://sl.wikipedia.org/wiki/Zdravljica#/media/Slika:Zdravica-%C5%A1t4-rokopis1.jpg);
             object-fit: cover;
         }
         .image-container {
@@ -35,7 +35,7 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             width: 300px;
-            color: white;
+            color: rgb(0, 0, 0);
         }
         .input-group {
             display: flex;
@@ -68,16 +68,21 @@
             font-weight: bold;
             font-size: 18px;
         }
+        #scoreboard {
+            margin-top: 20px;
+        }
+        #scoreboard h2 {
+            border-bottom: 1px solid white;
+            padding-bottom: 10px;
+        }
+        #scoreboard div {
+            margin: 5px 0;
+        }
         #round-counter {
             margin-top: 20px;
             font-size: 18px;
         }
-        #score {
-            margin-top: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-        }
+
         .logout-btn {
             position: absolute;
             top: 20px;
@@ -93,11 +98,12 @@
         .logout-btn:hover {
             background-color: #cc0000;
         }
-        #stevec-poskusov {
+
+         #score-display {
+            color: rgb(0, 0, 0);
+            font-size: 20px;
             margin-top: 10px;
-            font-size: 18px;
             font-weight: bold;
-            color: white;
         }
     </style>
 </head>
@@ -127,29 +133,29 @@
         <button onclick="checkAnswer()">Preveri</button>
     </div>
     
-    <div id="result"></div>
-    <div id="score">Točke: 0</div>
     <div class="left-panel">
-        <div id="round-counter">Krog: {{ runda }}</div>
+        <div id="round-counter">Krog: 1</div>
+        <div id="score-display">Točke: 0</div>
     </div>
-    <div id="stevec-poskusov">Poskusi: {{ poizkus }}</div>
 
     <script>
-        let score = 0;
-        $(document).ready(function() {
-            loadRandomPoet();
-        });
+        function loadRandomPoet() {
             $.ajax({
                 url: '/pesniki',
                 method: 'GET',
                 success: function(data) {
-                    const randomIndex = Math.floor(Math.random() * data.length);
-                    const poet = data[randomIndex];
-                    $('#pesnikImage').attr('src', poet.pesnik_slika);
-                    $('#pesnikImage').data('poet-data', poet);
+                    if(data && data.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * data.length);
+                        const poet = data[randomIndex];
+                        $('#pesnikImage').attr('src', poet.pesnik_slika);
+                        $('#pesnikImage').data('poet-data', poet);
+                    }
+                },
+                error: function() {
+                    console.error('Napaka pri nalaganju pesnikov');
                 }
             });
-        
+        }
 
         function checkAnswer() {
             const poetData = $('#pesnikImage').data('poet-data');
@@ -169,19 +175,38 @@
                     vnos: vnos
                 }),
                 success: function(response) {
+                    // Posodobimo rezultat
                     if (response.correct) {
-                        $('#result').text('Pravilno!').css('color', 'green');
-                        score += 25;
-                        $('#score').text('Točke: ' + score);
+                        $('#result').text('Pravilno! +100 točk').css('color', 'green');
+                    }
+                    else if (response.partial > 0) {
+                        $('#result').text('Delno pravilno! Pravilnih delov: ' + response.partial + ' (+' + response.tocke_dodatek + ' točk)').css('color', 'orange');
                     } 
                     else {
-                        $('#result').text('Napačno! Poskusi znova.').css('color', 'red');
+                        $('#result').text('Napačno! Nadaljujemo z naslednjim pesnikom.').css('color', 'red');
                     }
-                    setTimeout(loadRandomPoet, 200);
+
+                    // Posodobimo točke in rundo
+                    $('#score-display').text('Točke: ' + response.tocke);
+                    $('#round-counter').text('Krog: ' + response.runda);
+
+                    // Naložimo novega pesnika
+                    setTimeout(loadRandomPoet, 500);
                     $('#ime, #priimek, #rojen, #umrl').val('');
+                },
+                error: function() {
+                    $('#result').text('Napaka pri pošiljanju odgovora').css('color', 'red');
                 }
             });
         }
+
+        $(document).ready(function() {
+            loadRandomPoet();
+            
+            // Inicializacija pri prvem nalaganju
+            $('#score-display').text('Točke: 0');
+            $('#round-counter').text('Krog: 1');
+        });
 
         function logout() {
             window.location.href = '/logout';
