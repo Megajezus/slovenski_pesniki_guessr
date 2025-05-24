@@ -1,7 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from tinydb import TinyDB, Query
-from datetime import datetime
-from tinydb.operations import delete
 import os
 
 app = Flask(__name__)
@@ -83,34 +81,65 @@ def get_pesnik(pesnik_id):
 def dodaj_pesnika():
     podatki = request.get_json()
     return jsonify(podatki), 201
-runda = 1
-poizkus = 1
+
+@app.route("/get_score", methods=["GET"])
+def get_score():
+    return jsonify({
+        "tocke": session.get('tocke', 0),
+        "runda": session.get('runda', 1)
+    })
 
 @app.route("/preveri_pesnika", methods=["POST"])
 def check_poet():
     data = request.get_json()
     pesnik_id = data['pesnik_id']
     vnos = data['vnos']
-    
-    poet = next((p for p in pesniki if p['id'] == pesnik_id), None)
-    
-    if not poet:
-        poizkus += 1
-        return jsonify({"correct": False}, "kviz.html", poizkus)
-        
-    
-    correct = (
-        vnos['ime'].lower() == poet['pesnik_ime'].lower() and
-        vnos['priimek'].lower() == poet['pesnik_priimek'].lower() and
-        vnos['rojen'] == poet['pesnik_rojen'] and
-        vnos['umrl'] == poet['pesnik_umrl']
-    )
-   if correct:
-        runda += 1
-        poizkus = 0
-        return render_template("kviz.html", runda, "kviz.html", poizkus)
-    return jsonify({"correct": correct})
 
+    if 'tocke' not in session:
+        session['tocke'] = 0
+    if 'runda' not in session:
+        session['runda'] = 1
+
+    poet = next((p for p in pesniki if p['id'] == pesnik_id), None)
+    if not poet:
+        # Povečamo rundo tudi če pesnik ne obstaja
+        session['runda'] += 1
+        session.modified = True
+        return jsonify({
+            "correct": False,
+            "partial": 0,
+            "tocke": session['tocke'],
+            "runda": session['runda'],
+            "tocke_dodatek": 0
+        })
+    
+    tocke_dodatek = 0
+    pravilni_deli = 0
+    
+    if vnos['ime'].lower() == poet['pesnik_ime'].lower():
+        pravilni_deli += 1
+    if vnos['priimek'].lower() == poet['pesnik_priimek'].lower():
+        pravilni_deli += 1
+    if vnos['rojen'] == poet['pesnik_rojen']:
+        pravilni_deli += 1
+    if vnos['umrl'] == poet['pesnik_umrl']:
+        pravilni_deli += 1
+    
+    tocke_dodatek = pravilni_deli * 25
+    
+    session['tocke'] += tocke_dodatek
+    session['runda'] += 1
+    session.modified = True
+    
+    correct = (pravilni_deli == 4)
+    
+    return jsonify({
+        "correct": correct,
+        "partial": pravilni_deli,
+        "tocke": session.get('tocke', 0), 
+        "runda": session.get('runda', 1),
+        "tocke_dodatek": tocke_dodatek
+    })
 
 if __name__ == "__main__":
     if not os.path.exists('templates'):
