@@ -100,7 +100,17 @@ def check_poet():
     if 'runda' not in session:
         session['runda'] = 1
 
-    poet = next((p for p in pesniki if p['id'] == pesnik_id), None)
+    uporabljeni_pesniki = []
+    poet = None
+    
+    for p in pesniki:
+        if p['id'] == pesnik_id:
+            if p["id"] not in uporabljeni_pesniki:
+                poet = p
+                uporabljeni_pesniki = uporabljeni_pesniki.append(p["id"])
+                break
+            elif session["runda"] > len(pesniki):
+                return jsonify({"redirect": url_for('konec')})
     if not poet:
         # Povečamo rundo tudi če pesnik ne obstaja
         session['runda'] += 1
@@ -140,6 +150,42 @@ def check_poet():
         "runda": session.get('runda', 1),
         "tocke_dodatek": tocke_dodatek
     })
+
+
+@app.route('/konec')
+def konec():
+    # Izračunajmo odstotek pravilnih odgovorov
+    max_tocke = len(pesniki) * 100 
+    dosezene_tocke = session.get('tocke', 0)
+    odstotek = (dosezene_tocke / max_tocke) * 100 
+    
+    # Določimo oceno
+    if odstotek < 50:
+        ocena = 1
+    elif odstotek < 63:
+        ocena = 2
+    elif odstotek < 75:
+        ocena = 3
+    elif odstotek < 90:
+        ocena = 4
+    else:
+        ocena = 5
+    
+    return render_template(
+    'konec.html', 
+    tocke=dosezene_tocke,
+    max_tocke=max_tocke,
+    odstotek=round(odstotek, 2),
+    ocena=ocena)
+
+@app.route("/konec", methods=["POST"])
+def reset_igre():
+    global uporabljeni_pesniki
+    uporabljeni_pesniki = set()
+    session['tocke'] = 0
+    session['runda'] = 1
+    session.modified = True
+    return jsonify({"success": True})
 
 if __name__ == "__main__":
     if not os.path.exists('templates'):
