@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Konec igre - Slovenski Pesniki</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #7900be;
+            margin-bottom: 20px;
+        }
+        .ocena {
+            font-size: 72px;
+            font-weight: bold;
+            color: #7900be;
+            margin: 20px 0;
+        }
+        .tocke {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        .odstotek {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 25px;
+            background-color: #7900be;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #5d0092;
+        }
+        .zvezdice {
+            font-size: 40px;
+            color: gold;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Konec igre!</h1>
+        
+        <div class="tocke">Tvoje točke: {{ tocke }} / {{ max_tocke }}</div>
+        <div class="odstotek">Uspešnost: {{ odstotek }}%</div>
+        
+        <div class="zvezdice">
+            {% for i in range(ocena) %}★{% endfor %}
+            {% for i in range(5 - ocena) %}☆{% endfor %}
+        </div>
+        
+        <div class="ocena">{{ ocena }}</div>
+        
+        <button onclick="window.location.href='/kviz'">Nova igra</button>
+    </div>
+</body>
+</html>
