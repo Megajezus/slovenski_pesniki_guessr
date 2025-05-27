@@ -75,7 +75,12 @@
         
         <div class="ocena">{{ ocena }}</div>
         
-        <button onclick="window.location.href='/kviz'">Nova igra</button>
+       <button class="logout-btn" onclick="nova_igra()">nova igra</button>
     </div>
+    <script>
+        function nova_igra() {
+            window.location.href = '/logout';
+        }
+    </script>
 </body>
 </html>
