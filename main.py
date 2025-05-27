@@ -42,12 +42,16 @@ def login():
             if user:
                 if user['password'] == password:
                     session['username'] = username
+                    # Inicializiramo seznam uporabljenih pesnikov ob prijavi
+                    session['uporabljeni_pesniki'] = []
                     return jsonify({'success': True, 'redirect': url_for('kviz')}) 
                 else:
                     return jsonify({'success': False, 'error': 'Napačno geslo'})
             else:
                 users.insert({'username': username, 'password': password})
                 session['username'] = username
+                # Inicializiramo seznam uporabljenih pesnikov ob registraciji
+                session['uporabljeni_pesniki'] = []
                 return jsonify({'success': True, 'redirect': url_for('kviz')})  
         except Exception as e:
             print(f"Napaka pri prijavi: {str(e)}")
@@ -59,20 +63,44 @@ def login():
 def kviz():
     if 'username' not in session:
         return redirect(url_for('login'))
+    
+    # Preverimo, če so vsi pesniki že bili uporabljeni
+    if 'uporabljeni_pesniki' in session and len(session['uporabljeni_pesniki']) >= len(pesniki):
+        return redirect(url_for('konec'))
+    
     return render_template('kviz.html')
     
 @app.route('/logout')
 def logout():
+    # Clear all data from the JSON file
+    db.truncate()
+    # Clear session data
     session.pop('username', None)
+    session.pop('tocke', None)
+    session.pop('runda', None)
+    session.pop('uporabljeni_pesniki', None)
     return redirect(url_for('login'))
 
 @app.route('/pesniki', methods=['GET'])
 def get_pesniki():
-    return jsonify(pesniki)
+    # Vrnemo samo pesnike, ki še niso bili uporabljeni
+    if 'uporabljeni_pesniki' not in session:
+        session['uporabljeni_pesniki'] = []
+    
+    neuporabljeni_pesniki = []
+    for p in pesniki:
+        if p['id'] not in session['uporabljeni_pesniki']:
+            neuporabljeni_pesniki.append(p)
+    return jsonify(neuporabljeni_pesniki)
 
 @app.route("/pesniki/<int:pesnik_id>", methods=["GET"])
 def get_pesnik(pesnik_id):
-    pesnik = next((pesnik for pesnik in pesniki if pesnik["id"] == pesnik_id), None)
+    pesnik = None
+    for pesnik in pesniki:
+        if pesnik["id"] == pesnik_id:
+            pesnik = pesnik
+            break
+
     if pesnik:
         return jsonify(pesnik)
     return jsonify({"error": "pesnik ne obstaja"}), 404
@@ -99,20 +127,16 @@ def check_poet():
         session['tocke'] = 0
     if 'runda' not in session:
         session['runda'] = 1
+    if 'uporabljeni_pesniki' not in session:
+        session['uporabljeni_pesniki'] = []
 
-    uporabljeni_pesniki = []
     poet = None
-    
     for p in pesniki:
         if p['id'] == pesnik_id:
-            if p["id"] not in uporabljeni_pesniki:
-                poet = p
-                uporabljeni_pesniki = uporabljeni_pesniki.append(p["id"])
-                break
-            elif session["runda"] > len(pesniki):
-                return jsonify({"redirect": url_for('konec')})
+            poet = p
+            break
+    
     if not poet:
-        # Povečamo rundo tudi če pesnik ne obstaja
         session['runda'] += 1
         session.modified = True
         return jsonify({
@@ -122,6 +146,11 @@ def check_poet():
             "runda": session['runda'],
             "tocke_dodatek": 0
         })
+    
+    # Dodamo pesnika v seznam uporabljenih
+    if pesnik_id not in session['uporabljeni_pesniki']:
+        session['uporabljeni_pesniki'].append(pesnik_id)
+        session.modified = True
     
     tocke_dodatek = 0
     pravilni_deli = 0
@@ -142,6 +171,17 @@ def check_poet():
     session.modified = True
     
     correct = (pravilni_deli == 4)
+    
+    # Preverimo, če so vsi pesniki uporabljeni
+    if session["runda"] >= len(pesniki):
+        return jsonify({
+            "correct": correct,
+            "partial": pravilni_deli,
+            "tocke": session.get('tocke', 0), 
+            "runda": session.get('runda', 1),
+            "tocke_dodatek": tocke_dodatek,
+            "redirect": url_for('konec')
+        })
     
     return jsonify({
         "correct": correct,
@@ -172,18 +212,17 @@ def konec():
         ocena = 5
     
     return render_template(
-    'konec.html', 
-    tocke=dosezene_tocke,
-    max_tocke=max_tocke,
-    odstotek=round(odstotek, 2),
-    ocena=ocena)
+        'konec.html', 
+        tocke=dosezene_tocke,
+        max_tocke=max_tocke,
+        odstotek=round(odstotek, 2),
+        ocena=ocena)
 
 @app.route("/konec", methods=["POST"])
 def reset_igre():
-    global uporabljeni_pesniki
-    uporabljeni_pesniki = set()
     session['tocke'] = 0
     session['runda'] = 1
+    session['uporabljeni_pesniki'] = []
     session.modified = True
     return jsonify({"success": True})
 
