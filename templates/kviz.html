@@ -12,17 +12,21 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            background-image: url(https://sl.wikipedia.org/wiki/Zdravljica#/media/Slika:Zdravica-%C5%A1t4-rokopis1.jpg);
+            background-image: 
+                linear-gradient(rgba(245, 241, 230, 0.9), rgba(245, 241, 230, 0.9)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path fill="%23d9c7a7" fill-opacity="0.3" d="M30,10 L50,30 L70,10 L90,30 L70,50 L90,70 L70,90 L50,70 L30,90 L10,70 L30,50 L10,30 Z"/></svg>');
             object-fit: cover;
         }
         .image-container {
-            width: 500px;
-            height: 500px;
-            border: 4px solid #0704ca;
-            margin-bottom: 20px;
-            display: flex;
+            background-color: rgba(255, 253, 245, 0.85);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin: 30px auto;
             align-items: center;
             justify-content: center;
+            height: 800px;
+            width: 600px;
             overflow: hidden;
             position: relative; /* Added for better control */
         }
@@ -141,16 +145,23 @@
     </div>
 
     <script>
+        // Funkcija za nalaganje naključnega pesnika     
         function loadRandomPoet() {
             $.ajax({
                 url: '/pesniki',
                 method: 'GET',
                 success: function(data) {
+                    // preveri, ali smo prejeli podatke in če vsebujejo elemente
                     if(data && data.length > 0) {
+                        // generira naključen indeks
                         const randomIndex = Math.floor(Math.random() * data.length);
+                        // izbere naključnega pesnika iz seznama
                         const poet = data[randomIndex];
-                        $('#pesnikImage').attr('src', poet.pesnik_slika);
-                        $('#pesnikImage').data('poet-data', poet);
+                        $('#pesnikImage').attr('src', poet.pesnik_slika); // nastavi atribut src za sliko
+                        $('#pesnikImage').data('poet-data', poet); // shrani podatke o pesniku v HTML element
+                    }
+                    else {
+                        window.location.href = '/konec';
                     }
                 },
                 error: function() {
@@ -160,8 +171,8 @@
         }
 
         function checkAnswer() {
-            const poetData = $('#pesnikImage').data('poet-data');
-            const vnos = {
+            const poetData = $('#pesnikImage').data('poet-data'); // Pridobi shranjene podatke o trenutnem pesniku iz HTML elementa slike
+            const vnos = { // Ustvari objekt z vrednostmi iz vnosnih polj (ime, priimek, rojen, umrl)
                 ime: $('#ime').val(),
                 priimek: $('#priimek').val(),
                 rojen: $('#rojen').val(),
@@ -170,9 +181,9 @@
 
             $.ajax({
                 url: '/preveri_pesnika',
-                method: 'POST',
+                method: 'POST', // Pošlje POST zahtevo na strežnik na pot /preveri_pesnika
                 contentType: 'application/json',
-                data: JSON.stringify({
+                data: JSON.stringify({ // Pošlje podatke v JSON formatu
                     pesnik_id: poetData.id,
                     vnos: vnos
                 }),
@@ -192,8 +203,13 @@
                     $('#score-display').text('Točke: ' + response.tocke);
                     $('#round-counter').text('Krog: ' + response.runda);
 
+                    if (response.runda > 13) {
+                        window.location.href = '/konec';
+                        return;
+                    }
+
                     // Naložimo novega pesnika
-                    setTimeout(loadRandomPoet, 500);
+                    setTimeout(loadRandomPoet, 100);
                     $('#ime, #priimek, #rojen, #umrl').val('');
                 }
             });
@@ -210,6 +226,7 @@
         function logout() {
             window.location.href = '/logout';
         }
+
     </script>
 </body>
 </html>
