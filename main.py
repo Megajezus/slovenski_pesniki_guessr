@@ -218,13 +218,16 @@ def konec():
         odstotek=round(odstotek, 2),
         ocena=ocena)
 
-@app.route("/konec", methods=["POST"])
-def reset_igre():
-    session['tocke'] = 0
-    session['runda'] = 1
-    session['uporabljeni_pesniki'] = []
-    session.modified = True
-    return jsonify({"success": True})
+@app.route("/nova_igra", methods=["POST"])
+def nova_igra():
+    # Clear all data from the JSON file
+    db.truncate()
+    # Clear session data
+    session.pop('username', None)
+    session.pop('tocke', None)
+    session.pop('runda', None)
+    session.pop('uporabljeni_pesniki', None)
+    return redirect(url_for('login'))
 
 if __name__ == "__main__":
     if not os.path.exists('templates'):
